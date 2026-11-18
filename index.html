@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dosis en radiología pediátrica</title>
+<style>
+  :root {
+    --fondo: #f4f6f8; --tarjeta: #ffffff; --texto: #1d2733; --suave: #5b6b7c;
+    --acento: #0b6e8a; --borde: #d5dde5; --nohacer: #b4500f; --nohacer-fondo: #fff3ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #10161c; --tarjeta: #1a232c; --texto: #e6edf3; --suave: #9fb0c0;
+      --acento: #4cc2e0; --borde: #2c3a47; --nohacer: #f0a46c; --nohacer-fondo: #2e2219;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--fondo); color: var(--texto); line-height: 1.45; }
+  main { max-width: 520px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 1.3rem; margin: 4px 0 2px; }
+  h2 { font-size: 1rem; margin: 0 0 10px; }
+  .sub { color: var(--suave); font-size: .88rem; margin: 0 0 16px; }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 14px;
+             padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-weight: 600; font-size: .9rem; margin: 0 0 6px; }
+  select { width: 100%; font-size: 1.05rem; padding: 12px; border-radius: 10px;
+           border: 1px solid var(--borde); background: var(--fondo); color: var(--texto); margin-bottom: 14px; }
+  select:last-of-type { margin-bottom: 0; }
+  .resultado { text-align: center; }
+  .etq { color: var(--suave); font-size: .85rem; margin: 0; }
+  .valor { font-size: 3rem; font-weight: 700; color: var(--acento); margin: 2px 0 0; line-height: 1.1; }
+  .unidad { font-size: 1.05rem; color: var(--suave); margin: 0; }
+  .bert { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--borde); font-size: .95rem; }
+  .bert strong { font-size: 1.1rem; }
+  .nota { font-size: .8rem; color: var(--suave); margin: 10px 0 0; }
+  .nohacer { background: var(--nohacer-fondo); border-color: var(--nohacer); }
+  .nohacer h2 { color: var(--nohacer); }
+  .nohacer ul { margin: 0; padding-left: 18px; }
+  .nohacer li { margin-bottom: 8px; font-size: .93rem; }
+  .fuente { display: block; font-size: .76rem; color: var(--suave); }
+  .check { margin: 0; padding-left: 18px; font-size: .9rem; }
+  .check li { margin-bottom: 6px; }
+  details { font-size: .9rem; }
+  summary { cursor: pointer; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .88rem; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--borde); }
+  th { color: var(--suave); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  footer { font-size: .76rem; color: var(--suave); }
+  footer a, .tarjeta a { color: var(--acento); }
+  footer ol { padding-left: 18px; margin: 6px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dosis en radiología pediátrica</h1>
+  <p class="sub">Dosis efectiva media estimada por exploración y grupo de edad. Datos DOPOES.</p>
+
+  <div class="tarjeta">
+    <label for="selExploracion">Exploración</label>
+    <select id="selExploracion"></select>
+    <label for="selEdad">Edad</label>
+    <select id="selEdad"></select>
+  </div>
+
+  <div class="tarjeta resultado" aria-live="polite">
+    <p class="etq">Dosis efectiva media estimada</p>
+    <p class="valor" id="txtValor">—</p>
+    <p class="unidad">mSv</p>
+    <p class="bert" id="txtBert"></p>
+    <p class="nota" id="txtNota"></p>
+  </div>
+
+  <div class="tarjeta nohacer" id="bloqueNoHacer">
+    <h2>Recomendaciones de «no hacer»</h2>
+    <ul id="listaNoHacer"></ul>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Antes de solicitar</h2>
+    <ul class="check">
+      <li>¿Qué pregunta clínica resuelve y cómo cambiará el manejo?</li>
+      <li>¿Hay estudios previos suficientes? ¿Es el momento adecuado?</li>
+      <li>¿Resolvería la duda una ecografía o una RM?</li>
+      <li>¿Incluye la solicitud la pregunta clínica y los antecedentes?</li>
+      <li>En caso de duda, consulte con Radiodiagnóstico.</li>
+    </ul>
+  </div>
+
+  <div class="tarjeta" id="bloqueNrd">
+    <details>
+      <summary>Niveles de referencia europeos (RP 185)</summary>
+      <div id="contNrd"></div>
+      <p class="nota">Magnitudes medibles del equipo, no dosis efectiva. Son NRD europeos orientativos; en la práctica se aplican los NRD nacionales vigentes.</p>
+    </details>
+  </div>
+
+  <footer>
+    <p><strong>Cómo leer estos valores.</strong> Son medias poblacionales estimadas a partir de la base de datos DOPOES, no la dosis de un paciente concreto ni un límite. La dosis real depende del equipo, el protocolo y el tamaño del niño. La equivalencia en radiación natural (BERT) usa 3,0 mSv/año (UNSCEAR 2024) y solo orienta sobre el orden de magnitud. La decisión final de justificación corresponde al especialista (RD 601/2019).</p>
+    <p><a href="comparativa.html">Comparativa con series europeas (gráficos)</a></p>
+    <p><strong>Fuentes</strong></p>
+    <ol>
+      <li>Actualización de los valores de dosis en procedimientos radiológicos en pacientes pediátricos (documento de base, datos DOPOES), tablas 1–3. <a href="https://www.csn.es/documents/10182/2399922/Niveles%2Bde%2Breferencia%2Bde%2Bdosis%2B%28NRD%29%2By%2B%2Bestimación%2Bde%2BDosis%2BPoblacional%2Ben%2B%2BEspaña%2B%28DOPOES%2BII%2B-%2BResumen%2Bejecutivo%29/ebdd90b7-f89d-d2e4-767b-b0d4247d3604">DOPOES II (CSN)</a></li>
+      <li>SERAM. Recomendaciones de «no hacer». Comisión de Asuntos Profesionales, 2014.</li>
+      <li>Ministerio de Sanidad. Compromiso por la Calidad de las Sociedades Científicas: recomendaciones de <a href="https://vsf-iwsold-pre-portal.sanidad.gob.es/areas/calidadAsistencial/excelenciaClinica/docs/SOCIEDAD_ESP_Radiologia_Medica.pdf">SERAM</a> y <a href="https://vsf-iwsold-pre-portal.sanidad.gob.es/areas/calidadAsistencial/excelenciaClinica/docs/A_S.E_PEDIATRIA_0K.pdf">AEP</a>.</li>
+      <li>Comisión Europea. <a href="https://op.europa.eu/en/publication-detail/-/publication/6e473ff5-bd4b-11e8-99ee-01aa75ed71a1/language-en">Radiation Protection 185</a>, tablas 10.2a–b, 2018.</li>
+      <li>UNSCEAR 2024, vol. II, anexo B, tabla 15 (3,0 mSv/año).</li>
+    </ol>
+    <p id="revision"></p>
+  </footer>
+</main>
+
+<script>
+/* =====================================================================
+   DATOS — edite solo esta sección.
+   ===================================================================== */
+const REVISION = "Revisión de contenidos: 19 de noviembre de 2026";
+const FONDO_NATURAL = 3.0;  // mSv/año, UNSCEAR 2024
+const EDADES = ["< 1 año", "1–5 años", "6–10 años", "11–15 años"];
+
+// Dosis efectiva media (mSv). "dosis": 4 valores por edad; "unica": un solo valor pediátrico.
+// "bert": "dias" o "anios" (como en el documento de base). "nh": claves de NO_HACER. "nrd": clave de NRD.
+const EXPLORACIONES = [
+  { mod: "Radiografía simple", nombre: "RX tórax",            dosis: [0.007, 0.010, 0.015, 0.025], bert: "dias", nh: ["uci", "toraco", "bronq"], nrd: "rxTorax" },
+  { mod: "Radiografía simple", nombre: "RX abdomen",          dosis: [0.045, 0.075, 0.105, 0.140], bert: "dias", nh: ["abdAgudo", "invag", "pielo"], nrd: "rxAbdomen" },
+  { mod: "Radiografía simple", nombre: "RX cadera / pelvis",  dosis: [0.040, 0.045, 0.075, 0.135], bert: "dias", nh: ["displasia", "pelvisPoli"], nrd: "rxPelvis" },
+  { mod: "Radiografía simple", nombre: "RX columna cervical", dosis: [0.015, 0.016, 0.017, 0.021], bert: "dias", nh: ["cervical"] },
+  { mod: "Radiografía simple", nombre: "RX cráneo",           dosis: [0.010, 0.014, 0.017, 0.026], bert: "dias", nh: ["tce", "shas", "sinusitis"], nrd: "rxCraneo" },
+  { mod: "Radiografía simple", nombre: "RX columna dorsal",   dosis: [0.050, 0.080, 0.175, 0.355], bert: "dias", nh: [] },
+  { mod: "Radiografía simple", nombre: "RX columna lumbar",   dosis: [0.100, 0.110, 0.150, 0.320], bert: "dias", nh: ["lumbar", "sacro"] },
+
+  { mod: "Tomografía computarizada", nombre: "TC cráneo",              dosis: [1.2, 1.5, 2.0, 2.6], bert: "anios", nh: ["cefalea", "convulsion"], nrd: "tcCraneo" },
+  { mod: "Tomografía computarizada", nombre: "TC peñasco",             dosis: [0.8, 0.8, 0.9, 1.6], bert: "anios", nh: [] },
+  { mod: "Tomografía computarizada", nombre: "TC facial y senos paranasales", dosis: [0.5, 0.6, 0.7, 1.0], bert: "anios", nh: ["sinusitis"] },
+  { mod: "Tomografía computarizada", nombre: "TC tórax",               dosis: [1.5, 1.8, 2.6, 5.4], bert: "anios", nh: [], nrd: "tcTorax" },
+  { mod: "Tomografía computarizada", nombre: "TC abdomen",             dosis: [3.4, 3.7, 5.9, 9.0], bert: "anios", nh: ["apendicitis", "pancreatitis"], nrd: "tcAbdomen" },
+  { mod: "Tomografía computarizada", nombre: "TC abdomen y pelvis",    dosis: [3.5, 3.6, 6.1, 9.4], bert: "anios", nh: ["apendicitis", "pancreatitis"], nrd: "tcAbdomen" },
+
+  { mod: "Fluoroscopia", nombre: "Cistografía",                          unica: 0.3, bert: "dias", nh: [] },
+  { mod: "Fluoroscopia", nombre: "Uretrocistografía retrógrada (CUMS)",  unica: 0.2, bert: "dias", nh: [] },
+  { mod: "Fluoroscopia", nombre: "Urografía",                            unica: 0.4, bert: "dias", nh: ["uiv"] },
+  { mod: "Fluoroscopia", nombre: "Esofagograma",                         unica: 0.6, bert: "dias", nh: [] },
+  { mod: "Fluoroscopia", nombre: "Tránsito esofagogastroduodenal",       unica: 0.6, bert: "dias", nh: ["eii"] },
+  { mod: "Fluoroscopia", nombre: "Enema opaco",                          unica: 0.8, bert: "dias", nh: ["eii"] },
+  { mod: "Fluoroscopia", nombre: "Angiografía cardíaca",                 unica: 4.7, bert: "dias", nh: [] }
+];
+
+// Recomendaciones de «no hacer» aplicables a pediatría (resumidas).
+const NO_HACER = {
+  uci:         { t: "Radiografía de tórax diaria rutinaria en pacientes ingresados en UCI.", f: "SERAM 2014, p. 35" },
+  toraco:      { t: "Radiografía de tórax rutinaria después de una toracocentesis.", f: "SERAM 2014, p. 36" },
+  bronq:       { t: "Radiografía de tórax rutinaria en la bronquiolitis aguda.", f: "AEP, Compromiso por la Calidad, 2013" },
+  abdAgudo:    { t: "Radiografía de abdomen en el abdomen agudo, salvo sospecha de obstrucción o perforación intestinal.", f: "SERAM 2014, p. 62" },
+  invag:       { t: "Radiografía simple ante sospecha de invaginación intestinal: la técnica de elección es la ecografía.", f: "SERAM 2014, p. 51" },
+  pielo:       { t: "Radiografía de abdomen ante sospecha de pielonefritis aguda.", f: "SERAM 2014, p. 61" },
+  displasia:   { t: "Radiografía de pelvis por sospecha de displasia de cadera en menores de 4 meses: hacer ecografía.", f: "SERAM 2014, p. 52" },
+  pelvisPoli:  { t: "Radiografía de pelvis en el politraumatizado si se va a hacer TC corporal.", f: "SERAM 2014, p. 57" },
+  cervical:    { t: "Pruebas de imagen en la cervicalgia no complicada y sin signos de alerta.", f: "SERAM 2014, p. 28" },
+  lumbar:      { t: "Pruebas de imagen en la lumbalgia no complicada y sin signos de alerta.", f: "SERAM 2014, p. 27" },
+  sacro:       { t: "Técnicas con radiación ionizante para valorar la actividad de una sacroileítis aguda: usar RM.", f: "SERAM 2014, p. 47" },
+  tce:         { t: "Radiografía de cráneo en el traumatismo craneoencefálico, salvo sospecha de causa no accidental.", f: "SERAM 2014, p. 26" },
+  shas:        { t: "Radiografía lateral de cráneo sistemática en niños con apnea-hipopnea del sueño.", f: "SERAM 2014, p. 54" },
+  sinusitis:   { t: "Estudios de imagen rutinarios en la sinusitis aguda bacteriana no complicada.", f: "SERAM 2014, p. 53" },
+  cefalea:     { t: "Neuroimagen en niños con cefalea primaria, exploración neurológica normal y sin signos de alarma.", f: "SERAM 2014, p. 55" },
+  convulsion:  { t: "TC o RM en niños con convulsión febril simple.", f: "SERAM, Compromiso por la Calidad, 2014" },
+  apendicitis: { t: "TC de abdomen como prueba inicial ante sospecha de apendicitis: empezar por ecografía y reservar la TC para los casos no concluyentes.", f: "SERAM 2014, p. 33" },
+  pancreatitis:{ t: "TC en la pancreatitis aguda con clínica inequívoca y elevación de amilasa y lipasa.", f: "SERAM 2014, p. 59" },
+  uiv:         { t: "Urografía intravenosa como primera prueba en el dolor agudo de flanco con sospecha de cólico nefrítico.", f: "SERAM 2014, p. 60" },
+  eii:         { t: "Estudios baritados en la evaluación diagnóstica de la enfermedad inflamatoria intestinal pediátrica: usar ecografía o RM.", f: "SERAM 2014, p. 56" }
+};
+
+// NRD europeos pediátricos (RP 185, tablas 10.2a–b). Ka,e en mGy; PKA en mGy·cm²; CTDIvol en mGy; DLP en mGy·cm.
+const NRD = {
+  rxTorax:   { col: ["Peso", "Ka,e (mGy)", "PKA (mGy·cm²)"], filas: [["< 5 kg", "", 15], ["5–< 15 kg", 0.06, 22], ["15–< 30 kg", 0.08, 50], ["30–< 50 kg", 0.11, 70], ["50–< 80 kg", "", 87]], nota: "Tórax AP/PA." },
+  rxAbdomen: { col: ["Peso", "Ka,e (mGy)", "PKA (mGy·cm²)"], filas: [["< 5 kg", "", 45], ["5–< 15 kg", "", 150], ["15–< 30 kg", 0.40, 250], ["30–< 50 kg", 0.75, 475], ["50–< 80 kg", "", 700]], nota: "Abdomen AP." },
+  rxPelvis:  { col: ["Peso", "PKA (mGy·cm²)"], filas: [["15–< 30 kg", 180], ["30–< 50 kg", 310]], nota: "Pelvis AP." },
+  rxCraneo:  { col: ["Edad", "AP/PA PKA (mGy·cm²)", "LAT PKA (mGy·cm²)"], filas: [["3 meses–< 1 año", 215, 200], ["1–< 6 años", 295, 250], ["≥ 6 años", 350, ""]], nota: "" },
+  tcCraneo:  { col: ["Edad", "CTDIvol (mGy)", "DLP (mGy·cm)"], filas: [["0–< 3 meses", 24, 300], ["3 meses–< 1 año", 28, 385], ["1–< 6 años", 40, 505], ["≥ 6 años", 50, 650]], nota: "Maniquí de 16 cm; una serie." },
+  tcTorax:   { col: ["Peso", "CTDIvol (mGy)", "DLP (mGy·cm)"], filas: [["< 5 kg", 1.4, 35], ["5–< 15 kg", 1.8, 50], ["15–< 30 kg", 2.7, 70], ["30–< 50 kg", 3.7, 115], ["50–< 80 kg", 5.4, 200]], nota: "Maniquí de 32 cm; una serie." },
+  tcAbdomen: { col: ["Peso", "CTDIvol (mGy)", "DLP (mGy·cm)"], filas: [["< 5 kg", "", 45], ["5–< 15 kg", 3.5, 120], ["15–< 30 kg", 5.4, 150], ["30–< 50 kg", 7.3, 210], ["50–< 80 kg", 13, 480]], nota: "Maniquí de 32 cm; una serie. RP 185 da un único NRD de abdomen." }
+};
+/* ===================================================================== */
+
+const $ = id => document.getElementById(id);
+const selExp = $("selExploracion"), selEdad = $("selEdad");
+const num = (v, dec) => v.toLocaleString("es-ES", dec === undefined ? { maximumFractionDigits: 3 } : { minimumFractionDigits: dec, maximumFractionDigits: dec });
+
+function opcion(texto, valor) { const o = document.createElement("option"); o.textContent = texto; o.value = valor; return o; }
+
+// Selector de exploraciones agrupado por modalidad
+const grupos = {};
+EXPLORACIONES.forEach((e, i) => {
+  if (!grupos[e.mod]) { grupos[e.mod] = document.createElement("optgroup"); grupos[e.mod].label = e.mod; selExp.appendChild(grupos[e.mod]); }
+  grupos[e.mod].appendChild(opcion(e.nombre, i));
+});
+
+// Redondeo que evita errores de coma flotante (p. ej., 36,4999… → 37)
+const redondea = (x, dec = 0) => { const f = 10 ** dec; return Math.round(Math.round(x * f * 1e6) / 1e6) / f; };
+
+function textoBert(e, mSv) {
+  const anios = mSv / FONDO_NATURAL;
+  if (e.bert === "anios") {
+    const meses = redondea(anios * 12);
+    return `Equivale aproximadamente a <strong>${num(redondea(anios, 1), 1)} años</strong> de radiación natural` + (meses >= 1 && anios < 1 ? ` (unos ${meses} ${meses === 1 ? "mes" : "meses"})` : "") + ".";
+  }
+  const dias = Math.max(1, redondea(anios * 365));
+  return `Equivale aproximadamente a <strong>${dias} ${dias === 1 ? "día" : "días"}</strong> de radiación natural` + (dias >= 365 ? ` (unos ${num(redondea(anios, 1), 1)} años)` : "") + ".";
+}
+
+function rellenarEdades() {
+  const e = EXPLORACIONES[selExp.value];
+  const previa = selEdad.value;
+  selEdad.innerHTML = "";
+  if (e.unica !== undefined) {
+    selEdad.appendChild(opcion("Todas las edades (0–15 años)", 0));
+    selEdad.disabled = true;
+  } else {
+    EDADES.forEach((t, i) => selEdad.appendChild(opcion(t, i)));
+    selEdad.disabled = false;
+    if (previa !== "" && EDADES[previa]) selEdad.value = previa;
+  }
+  mostrar();
+}
+
+function mostrar() {
+  const i = Number(selExp.value), e = EXPLORACIONES[i];
+  const mSv = e.unica !== undefined ? e.unica : e.dosis[selEdad.value];
+  $("txtValor").textContent = num(mSv, e.mod === "Radiografía simple" ? 3 : 1);  // misma precisión que la fuente
+  $("txtBert").innerHTML = textoBert(e, mSv);
+  $("txtNota").textContent = e.unica !== undefined
+    ? "Promedio único para toda la población pediátrica: no hay datos suficientes para separar por edad."
+    : "";
+
+  // No hacer
+  const lista = $("listaNoHacer"); lista.innerHTML = "";
+  e.nh.forEach(k => {
+    const r = NO_HACER[k], li = document.createElement("li");
+    li.innerHTML = `No hacer: ${r.t}<span class="fuente">${r.f}</span>`;
+    lista.appendChild(li);
+  });
+  if (!e.nh.length) lista.innerHTML = `<li>Sin recomendación específica de «no hacer» para esta exploración en las fuentes consultadas. Consulte la guía de indicaciones del servicio.</li>`;
+
+  // NRD
+  const n = NRD[e.nrd];
+  $("bloqueNrd").hidden = !n;
+  if (n) {
+    let h = "<table><thead><tr>" + n.col.map((c, j) => `<th${j ? ' class="num"' : ""}>${c}</th>`).join("") + "</tr></thead><tbody>";
+    n.filas.forEach(f => { h += "<tr>" + f.map((v, j) => `<td${j ? ' class="num"' : ""}>${v === "" ? "—" : (typeof v === "number" ? num(v) : v)}</td>`).join("") + "</tr>"; });
+    h += "</tbody></table>" + (n.nota ? `<p class="nota">${n.nota}</p>` : "");
+    $("contNrd").innerHTML = h;
+  }
+
+  history.replaceState(null, "", "?e=" + i + (e.unica === undefined ? "&r=" + selEdad.value : ""));
+}
+
+// Enlace directo: ?e=<exploración>&r=<grupo de edad>, ambos desde 0
+const q = new URLSearchParams(location.search);
+if (EXPLORACIONES[q.get("e")]) selExp.value = q.get("e");
+if (EDADES[q.get("r")]) selEdad.appendChild(opcion("", q.get("r"))), selEdad.value = q.get("r");
+rellenarEdades();
+$("revision").textContent = REVISION;
+
+selExp.addEventListener("change", rellenarEdades);
+selEdad.addEventListener("change", mostrar);
+</script>
+</body>
+</html>
